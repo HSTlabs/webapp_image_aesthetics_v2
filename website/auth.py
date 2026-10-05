@@ -50,7 +50,8 @@ def login():
                     cursor_user.execute(f"INSERT INTO sessions (email, last_login, last_logout, user) VALUES (?, ?, ?, ?)",(email, login_time, login_time, str(-1)))
                     conn_user.commit()
                 flash('Logged in successfully!', category='success')
-                login_user(user, remember=True)
+                # Login ends when the browser closes, so the next visit is recorded
+                login_user(user, remember=False)
                 cursor_user.execute(f"UPDATE sessions SET user = '{current_user}' WHERE email = '{email}'")
                 conn_user.commit()
                 return redirect(url_for('views.home'))
@@ -111,7 +112,13 @@ def sign_up():
             # cur = conn.cursor()
             # cur.execute("INSERT INTO data (id, email, password, name, age, gender, rod) VALUES (?, ?, ?, ?, ?,?, ?)",
             #     (id,email, generate_password_hash(password1), first_name,age, gender,rod))
-            login_user(new_user, remember=True)
+            login_user(new_user, remember=False)
+            # Record sign-up as the user's first login
+            signup_time = str(datetime.datetime.now())
+            cursor_user = conn_user.cursor()
+            cursor_user.execute("INSERT OR REPLACE INTO sessions (email, last_login, last_logout, user) VALUES (?, ?, ?, ?)",
+                                (email, signup_time, signup_time, str(current_user)))
+            conn_user.commit()
             flash('Account created!', category='success')
             return redirect(url_for('views.home'))
     return render_template("sign_up.html", user=current_user)
