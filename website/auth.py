@@ -31,7 +31,7 @@ def login():
             cursor_user.execute("SELECT * FROM sessions WHERE email = ?", (email,))
             row = cursor_user.fetchone()
             if row is not None:
-                login_cond = (datetime.datetime.now() - datetime.datetime.strptime(row[2],"%Y-%m-%d %H:%M:%S.%f")).total_seconds() >= login_allowance_time
+                login_cond = (datetime.datetime.now() - datetime.datetime.fromisoformat(row[2])).total_seconds() >= login_allowance_time
             else:
                 login_cond = 1
             if check_password_hash(user.password, password) and login_cond: #check last logout of the user
