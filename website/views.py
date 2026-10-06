@@ -46,7 +46,6 @@ max_height = max_height[0][0]
 @views.route('/', methods=['GET', 'POST'])
 @login_required
 def home():
-    global_time = time.time()
     sess_idntfr = ''.join(random.choices(string.ascii_uppercase +
                                          string.digits, k=10))  # Generate a custom session ID
     session["answers"] = []
@@ -55,7 +54,6 @@ def home():
     session["start_time"] = 0
     session["image_selection"] = []
     session["id"] = sess_idntfr
-    session["global_time"] = global_time
     session["eml"] = ""
     cur.execute('SELECT distinct image_class FROM aspect_images')
     image_classes =  cur.fetchall()
@@ -102,6 +100,8 @@ def select():
     if session["update_no"] == 0 and len(session["image_selection"]) != 0:
         img1, img2 = session["image_selection"][-1]
         session["last_answer"] = [str(current_user), img1, img2, -1, 5]
+    if not session["image_selection"]:
+        session["global_time"] = time.time()
 
     sess_limit = True if len(session["image_selection"]) == max_pairs_in_session else False
     # make a list of all such rows and delete them
