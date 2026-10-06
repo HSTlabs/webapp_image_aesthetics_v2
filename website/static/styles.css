@@ -59,7 +59,7 @@ img:hover {
 
     img {
         height: 100%; /* adjust as needed */
-        object-fit:fill; /* this will ensure that images are scaled correctly */
+        object-fit: contain; /* Keep the canvas aspect ratio */
     }
 }
 
