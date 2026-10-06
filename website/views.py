@@ -80,7 +80,7 @@ def select():
         sess = session["id"]  # store the value of session_identifier from home
     except:
         flash('Something went wrong with the session! Please try again',category='error')
-        render_template(url_for('views.home'))
+        return redirect(url_for('views.home'))
 
     survey_type = session.get('survey_type')
     if survey_type is None: #if survey_type is none, it means select is being called from home and we need to request it from the form.
@@ -150,14 +150,14 @@ def select():
         f"SELECT img_id,link FROM {table_name} WHERE img_id = ?", (i1,))
     except:
         flash('Something went wrong with the database! Please re-take the survey',category='error')
-        redirect(url_for('views.home'))
+        return redirect(url_for('views.home'))
     image1 = cursorObject.fetchone()
     try:
         cursorObject.execute(
         f"SELECT img_id,link FROM {table_name} WHERE img_id = ?", (i2,))
     except:
         flash('Something went wrong with the database! Please re-take the survey',category='error')
-        redirect(url_for('views.home'))   
+        return redirect(url_for('views.home'))   
     image2 = cursorObject.fetchone()
     session["start_time"] = time.time()
     imgs_chosen = []
