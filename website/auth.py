@@ -33,8 +33,7 @@ def login():
         user = User.query.filter_by(email=email).first()
         if user:
             cursor_user = conn_user.cursor()
-            slct_string = f"SELECT * FROM sessions WHERE email = '{email}'"
-            cursor_user.execute(slct_string)
+            cursor_user.execute("SELECT * FROM sessions WHERE email = ?", (email,))
             row = cursor_user.fetchone()
             if row is not None:
                 login_cond = (datetime.datetime.now() - datetime.datetime.strptime(row[2],"%Y-%m-%d %H:%M:%S.%f")).total_seconds() >= login_allowance_time
@@ -44,7 +43,7 @@ def login():
                 
                 login_time = str(datetime.datetime.now())
                 if row is not None:
-                    cursor_user.execute(f"UPDATE sessions SET last_login = '{login_time}' WHERE email = '{email}'")
+                    cursor_user.execute("UPDATE sessions SET last_login = ? WHERE email = ?", (login_time, email))
                     conn_user.commit()
                 else:
                     cursor_user.execute(f"INSERT INTO sessions (email, last_login, last_logout, user) VALUES (?, ?, ?, ?)",(email, login_time, login_time, str(-1)))
@@ -52,7 +51,7 @@ def login():
                 flash('Logged in successfully!', category='success')
                 # Login ends when the browser closes, so the next visit is recorded
                 login_user(user, remember=False)
-                cursor_user.execute(f"UPDATE sessions SET user = '{current_user}' WHERE email = '{email}'")
+                cursor_user.execute("UPDATE sessions SET user = ? WHERE email = ?", (str(current_user), email))
                 conn_user.commit()
                 return redirect(url_for('views.home'))
             else:
@@ -72,7 +71,7 @@ def logout():
     # flash('Please wait for sometime before you login again', category='failure')
     cursor_user = conn_user.cursor()
     logout_time = str(datetime.datetime.now())
-    cursor_user.execute(f"UPDATE sessions SET last_logout = '{logout_time}' WHERE user = '{current_user}'")
+    cursor_user.execute("UPDATE sessions SET last_logout = ? WHERE user = ?", (logout_time, str(current_user)))
     conn_user.commit()
     logout_user()
     login_wait = 0
