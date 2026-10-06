@@ -44,12 +44,18 @@ cur.execute(f'SELECT max(height) from aspect_images')
 max_height = cur.fetchall()
 max_height = max_height[0][0]
 
+def save_answer(table_name, answer):
+    cursorObject = conn.cursor()
+    cursorObject.execute(
+        f"INSERT INTO {table_name} (user_id, session_id, img1, img2, selection, time_taken) VALUES (?, ?, ?, ?, ?, ?)",
+        (answer[0], session["id"], *answer[1:]))
+    conn.commit()
+
 @views.route('/', methods=['GET', 'POST'])
 @login_required
 def home():
     sess_idntfr = ''.join(random.choices(string.ascii_uppercase +
                                          string.digits, k=10))  # Generate a custom session ID
-    session["answers"] = []
     session["last_answer"] = []
     session["update_no"] = 0
     session["start_time"] = 0
@@ -101,6 +107,13 @@ def select():
     if session["update_no"] == 0 and len(session["image_selection"]) != 0:
         img1, img2 = session["image_selection"][-1]
         session["last_answer"] = [str(current_user), img1, img2, -1, 5]
+    if session.get("last_answer"):
+        try:
+            save_answer(table_name, session["last_answer"])
+        except sqlite3.Error:
+            flash('Something went wrong with the database! Please re-take the survey',category='error')
+            return redirect(url_for('views.home'))
+        session["last_answer"] = []
     if not session["image_selection"]:
         session["global_time"] = time.time()
 
@@ -121,27 +134,10 @@ def select():
     login_timeout = max_pairs_in_session * (time_for_each_pair + time_between_pairs + image_load_allowance)
     session_time = time.time()-session["global_time"]
     if len(lis) == 0 or sess_limit or (session_time >= login_timeout):
-        answers = session["answers"]
-        if session["last_answer"]:
-            answers = answers + [session["last_answer"]]
-        try:
-            cursorObject.executemany(
-                f"INSERT INTO {table_name} (user_id, session_id, img1, img2, selection, time_taken) VALUES (?, ?, ?, ?, ?, ?)",
-                [(a[0], session["id"], *a[1:]) for a in answers])
-            conn.commit()
-        except sqlite3.Error:
-            print(answers)
-            flash('Something went wrong with the database! Please re-take the survey',category='error')
-            redirect(url_for('views.home'))   
-        session["answers"] = []
-        session["last_answer"] = []
         session["image_selection"] = []
         session.pop('survey_type')
         print(lis)
         return redirect(url_for('views.thank_you'))
-    if session["last_answer"]:
-        session["answers"] = session["answers"] + [session["last_answer"]]
-        session["last_answer"] = []
     if table_name == 'data': table_name = 'images'
     if table_name == 'aspect_data': table_name = 'aspect_images'
 
