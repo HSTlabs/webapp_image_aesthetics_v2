@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, session
 from .models import User
 from werkzeug.security import generate_password_hash, check_password_hash
-from . import db, mail, IMG_DB_PATH, USER_DB_PATH
+from . import db, mail
+from .connections import get_user_db
 from flask_mail import Message
 from flask_login import login_user, login_required, logout_user, current_user
 import random
@@ -11,12 +12,6 @@ import time, datetime
 
 login_allowance_time = 10 #in seconds
 auth = Blueprint('auth', __name__)
-
-conn = sqlite3.connect(
-    IMG_DB_PATH, check_same_thread=False)
-
-conn_user = sqlite3.connect(
-    USER_DB_PATH, check_same_thread=False)
 
 #add about us page
 @auth.route('/about')
@@ -32,7 +27,7 @@ def login():
         password = request.form.get('password')
         user = User.query.filter_by(email=email).first()
         if user:
-            cursor_user = conn_user.cursor()
+            cursor_user = get_user_db().cursor()
             cursor_user.execute("SELECT * FROM sessions WHERE email = ?", (email,))
             row = cursor_user.fetchone()
             if row is not None:
@@ -44,15 +39,15 @@ def login():
                 login_time = str(datetime.datetime.now())
                 if row is not None:
                     cursor_user.execute("UPDATE sessions SET last_login = ? WHERE email = ?", (login_time, email))
-                    conn_user.commit()
+                    get_user_db().commit()
                 else:
                     cursor_user.execute(f"INSERT INTO sessions (email, last_login, last_logout, user) VALUES (?, ?, ?, ?)",(email, login_time, login_time, str(-1)))
-                    conn_user.commit()
+                    get_user_db().commit()
                 flash('Logged in successfully!', category='success')
                 # Login ends when the browser closes, so the next visit is recorded
                 login_user(user, remember=False)
                 cursor_user.execute("UPDATE sessions SET user = ? WHERE email = ?", (str(current_user), email))
-                conn_user.commit()
+                get_user_db().commit()
                 return redirect(url_for('views.home'))
             else:
                 if not login_cond:
@@ -69,10 +64,10 @@ def login():
 @login_required
 def logout():
     # flash('Please wait for sometime before you login again', category='failure')
-    cursor_user = conn_user.cursor()
+    cursor_user = get_user_db().cursor()
     logout_time = str(datetime.datetime.now())
     cursor_user.execute("UPDATE sessions SET last_logout = ? WHERE user = ?", (logout_time, str(current_user)))
-    conn_user.commit()
+    get_user_db().commit()
     logout_user()
     login_wait = 0
     time.sleep(login_wait)
@@ -114,10 +109,10 @@ def sign_up():
             login_user(new_user, remember=False)
             # Record sign-up as the user's first login
             signup_time = str(datetime.datetime.now())
-            cursor_user = conn_user.cursor()
+            cursor_user = get_user_db().cursor()
             cursor_user.execute("INSERT OR REPLACE INTO sessions (email, last_login, last_logout, user) VALUES (?, ?, ?, ?)",
                                 (email, signup_time, signup_time, str(current_user)))
-            conn_user.commit()
+            get_user_db().commit()
             flash('Account created!', category='success')
             return redirect(url_for('views.home'))
     return render_template("sign_up.html", user=current_user)
@@ -174,7 +169,7 @@ def send_reset_email(email, reset_token):
 
 @auth.route('/thankyou')
 def thankyou():
-    user = conn_user.cursor()
+    user = get_user_db().cursor()
     return render_template('thankyou.html', user=user)
 
 

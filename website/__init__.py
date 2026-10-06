@@ -29,12 +29,15 @@ def create_app():
     # from .run import run
     from .views import views
     from .auth import auth
+    from .connections import close_connections
 
     # app.register_blueprint(run, url_prefix='/survey')
     app.register_blueprint(auth, url_prefix='/')
     app.register_blueprint(views, url_prefix='/')
 
     from .models import User
+
+    app.teardown_appcontext(close_connections)
 
     with app.app_context():
         db.create_all()

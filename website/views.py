@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, sessio
 from flask_login import login_required, current_user
 from .models import User
 from . import db, IMG_DB_PATH
+from .connections import get_img_db
 import json
 import time
 import uuid
@@ -9,6 +10,7 @@ import sqlite3
 import random
 import string
 import datetime
+from contextlib import closing
 
 time_between_pairs = 2
 time_for_each_pair = 5
@@ -17,11 +19,6 @@ max_pairs_in_session = 20
 
 views = Blueprint('views', __name__)
 
-
-conn = sqlite3.connect(
-    IMG_DB_PATH, check_same_thread=False)
-
-cur = conn.cursor()
 
 '''
 cur.execute('SELECT * FROM images')
@@ -36,15 +33,11 @@ cur.execute('SELECT * from audios')
 auds = cur.fetchall()
 total_auds = len(auds)
 '''
-cur.execute(f'SELECT max(width) from aspect_images')
-max_width = cur.fetchall()
-max_width = max_width[0][0]
-
-cur.execute(f'SELECT max(height) from aspect_images')
-max_height = cur.fetchall()
-max_height = max_height[0][0]
+with closing(sqlite3.connect(IMG_DB_PATH)) as conn:
+    max_width, max_height = conn.execute('SELECT max(width), max(height) FROM aspect_images').fetchone()
 
 def save_answer(table_name, answer):
+    conn = get_img_db()
     cursorObject = conn.cursor()
     cursorObject.execute(
         f"INSERT INTO {table_name} (user_id, session_id, img1, img2, selection, time_taken) VALUES (?, ?, ?, ?, ?, ?)",
@@ -62,6 +55,7 @@ def home():
     session["image_selection"] = []
     session["id"] = sess_idntfr
     session["eml"] = ""
+    cur = get_img_db().cursor()
     cur.execute('SELECT distinct image_class FROM aspect_images')
     image_classes =  cur.fetchall()
     image_classes_unique = random.choice(image_classes)
@@ -95,7 +89,7 @@ def select():
     else:
         return redirect(url_for('views.home'))
     
-    cursorObject = conn.cursor()
+    cursorObject = get_img_db().cursor()
     '''
     try:
         cursorObject.execute(f"SELECT img1, img2 FROM {table_name} WHERE session_id ='{sess}' ")  # select images from the database with same session_id so that they can be removed.
