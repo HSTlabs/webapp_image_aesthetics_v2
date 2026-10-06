@@ -174,12 +174,14 @@ def select():
 @ login_required
 def submit():
     # get the user's selection and the two images that were shown
-    user_id = request.form['user_id']
+    if not session.get("image_selection"):
+        return redirect(url_for('views.home'))
+    img1, img2 = session["image_selection"][-1]
     try:
         selection = int(request.form['selection'])
-        img1 = int(request.form['img1'])
-        img2 = int(request.form['img2'])
     except ValueError:
+        abort(400)
+    if selection not in (img1, img2):
         abort(400)
     try:
         time_taken_ = time.time()-session["start_time"]
@@ -190,7 +192,7 @@ def submit():
     survey_type = request.form['survey']  # Get the survey type from the submitted form data
 
     if survey_type in ('temple', 'aspect'):
-        session["last_answer"] = [str(user_id), img1, img2, selection, time_taken_]
+        session["last_answer"] = [str(current_user), img1, img2, selection, time_taken_]
     '''    
     else:
         flash('Something went wrong with the database! Please re-take the survey',category='error')

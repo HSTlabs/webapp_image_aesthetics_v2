@@ -66,14 +66,10 @@
         }
 
         // Function to submit the form
-        function submitForm(selection, img1, img2) {
+        function submitForm(selection) {
             var form = document.getElementById("surveyForm");
             var selectionInput = document.getElementById("selectionInput");
-            var img1Input = document.getElementById("img1Input");
-            var img2Input = document.getElementById("img2Input");
             selectionInput.value = selection;
-            img1Input.value = img1;
-            img2Input.value = img2;
 
             // Hide the images and countdown timer immediately upon form submission
             var image1 = document.getElementById("img_one");
@@ -105,21 +101,18 @@
         </h3>
     </div>
     <form id="surveyForm" method="post" action="/submit">
-        <input type="hidden" name="user_id" value="{{ user }}">
         <input type="hidden" name="survey" value="{{ survey_type }}">
         <div id="img_container" class="flex-container">
             <div id="imgs1" class="flex2">
                 <img id="img_one" style="display: none;"
-                    onclick="submitForm('{{ img1[0] }}', '{{ img1[0] }}', '{{ img2[0] }}')">
+                    onclick="submitForm('{{ img1[0] }}')">
             </div>
             <div id="imgs2" class="flex2">
                 <img id="img_two" style="display: none;"
-                    onclick="submitForm('{{ img2[0] }}', '{{ img1[0] }}', '{{ img2[0] }}')">
+                    onclick="submitForm('{{ img2[0] }}')">
             </div>
         </div>
         <input type="hidden" id="selectionInput" name="selection">
-        <input type="hidden" id="img1Input" name="img1">
-        <input type="hidden" id="img2Input" name="img2">
     </form>
 </body>
 
