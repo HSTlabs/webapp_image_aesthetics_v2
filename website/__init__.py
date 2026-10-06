@@ -6,12 +6,15 @@ from flask_login import LoginManager
 from flask_mail import Mail
 db = SQLAlchemy()
 DB_NAME = "database.db"
+BASE_DIR = path.dirname(path.dirname(path.abspath(__file__)))
+IMG_DB_PATH = path.join(BASE_DIR, "img_db")
+USER_DB_PATH = path.join(BASE_DIR, "instance", DB_NAME)
 mail = Mail()
 
 def create_app():
     app = Flask(__name__)
     app.config['SECRET_KEY'] = os.environ['SECRET_KEY']
-    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{DB_NAME}'
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{USER_DB_PATH}'
     app.config['MAIL_SERVER']='smtp.gmail.com'            #appropriate email server
     app.config['MAIL_PORT'] = 587                         # appropriate mail port
     app.config['MAIL_USERNAME'] = ''  # add your email id

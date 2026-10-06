@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, redirect, url_for, session, flash, abort
 from flask_login import login_required, current_user
 from .models import User
-from . import db
+from . import db, IMG_DB_PATH
 import json
 import time
 import uuid
@@ -19,7 +19,7 @@ views = Blueprint('views', __name__)
 
 
 conn = sqlite3.connect(
-    "img_db", check_same_thread=False)
+    IMG_DB_PATH, check_same_thread=False)
 
 cur = conn.cursor()
 

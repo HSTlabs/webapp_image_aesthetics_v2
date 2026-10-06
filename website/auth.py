@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request, flash, redirect, url_for, session
 from .models import User
 from werkzeug.security import generate_password_hash, check_password_hash
-from . import db,mail
+from . import db, mail, IMG_DB_PATH, USER_DB_PATH
 from flask_mail import Message
 from flask_login import login_user, login_required, logout_user, current_user
 import random
@@ -13,10 +13,10 @@ login_allowance_time = 10 #in seconds
 auth = Blueprint('auth', __name__)
 
 conn = sqlite3.connect(
-    "img_db", check_same_thread=False)
+    IMG_DB_PATH, check_same_thread=False)
 
 conn_user = sqlite3.connect(
-    "./instance/database.db", check_same_thread=False)
+    USER_DB_PATH, check_same_thread=False)
 
 #add about us page
 @auth.route('/about')
