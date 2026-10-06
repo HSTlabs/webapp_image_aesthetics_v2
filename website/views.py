@@ -12,6 +12,7 @@ import datetime
 
 time_between_pairs = 2
 time_for_each_pair = 5
+image_load_allowance = 3
 max_pairs_in_session = 20
 
 views = Blueprint('views', __name__)
@@ -117,7 +118,7 @@ def select():
             lis.remove(x[1])
     '''
     # if all images are done, render the home page
-    login_timeout = max_pairs_in_session * time_for_each_pair + 3
+    login_timeout = max_pairs_in_session * (time_for_each_pair + time_between_pairs + image_load_allowance)
     session_time = time.time()-session["global_time"]
     if len(lis) == 0 or sess_limit or (session_time >= login_timeout):
         answers = session["answers"]
