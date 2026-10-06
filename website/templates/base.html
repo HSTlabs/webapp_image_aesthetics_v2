@@ -86,7 +86,9 @@
       }
 
       // Add a click event listener to the button, binding it to the function
-      myButton.onclick = buttonClickHandler;
+      if (myButton) {
+        myButton.onclick = buttonClickHandler;
+      }
     </script>
 
   </body>
