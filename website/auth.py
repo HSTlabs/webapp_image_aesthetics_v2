@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, flash, redirect, url_for, session
+from flask import Blueprint, render_template, request, flash, redirect, url_for, session, current_app
 from .models import User
 from werkzeug.security import generate_password_hash, check_password_hash
 from . import db, mail
@@ -9,6 +9,7 @@ import random
 import string
 import sqlite3
 import time, datetime
+import smtplib
 
 login_allowance_time = 10 #in seconds
 auth = Blueprint('auth', __name__)
@@ -124,11 +125,19 @@ def forgot_password():
         user = User.query.filter_by(email=email).first()
 
         if user:
+            if not current_app.config['MAIL_DEFAULT_SENDER']:
+                flash('Password reset by email is not available right now.', category='error')
+                return render_template('forgot_password.html', user=current_user)
+
             # Generate a unique token for password reset
             reset_token = user.generate_reset_token()
 
             # Send an email with the reset link
-            send_reset_email(user.email, reset_token)
+            try:
+                send_reset_email(user.email, reset_token)
+            except (smtplib.SMTPException, OSError):
+                flash('Could not send the reset email. Please try again later.', category='error')
+                return render_template('forgot_password.html', user=current_user)
 
             flash('Password reset link has been sent to your email.', category='success')
             return redirect(url_for('auth.login'))
