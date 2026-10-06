@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, session,flash
+from flask import Blueprint, render_template, request, redirect, url_for, session, flash, abort
 from flask_login import login_required, current_user
 from .models import User
 from . import db
@@ -49,10 +49,8 @@ def home():
     global_time = time.time()
     sess_idntfr = ''.join(random.choices(string.ascii_uppercase +
                                          string.digits, k=10))  # Generate a custom session ID
-    session["sql_query_aspect_data"] = "INSERT INTO aspect_data(user_id, session_id, img1, img2, selection,time_taken) VALUES"
-    session["sql_query_data"] = "INSERT INTO data(user_id, session_id, img1, img2, selection,time_taken) VALUES"
-    session["small_query_aspect_data"] = ""
-    session["small_query_data"] = ""
+    session["answers"] = []
+    session["last_answer"] = []
     session["update_no"] = 0
     session["start_time"] = 0
     session["image_selection"] = []
@@ -62,7 +60,7 @@ def home():
     cur.execute('SELECT distinct image_class FROM aspect_images')
     image_classes =  cur.fetchall()
     image_classes_unique = random.choice(image_classes)
-    cur.execute(f'SELECT img_id FROM aspect_images where image_class = {image_classes_unique[0]}')
+    cur.execute('SELECT img_id FROM aspect_images WHERE image_class = ?', (image_classes_unique[0],))
     links = cur.fetchall()
     for i in range(0, len(links)):
         links[i] = links[i][0]
@@ -102,10 +100,8 @@ def select():
     res = cursorObject.fetchall()
     '''
     if session["update_no"] == 0 and len(session["image_selection"]) != 0:
-        if table_name == 'data':
-            session["small_query_data"] = "(\'%s\', \'%s\', %s, %s, %s, %s)"%(str(current_user), str(session["id"]), session["image_selection"][-1][0], session["image_selection"][-1][1], -1, 5)
-        if table_name == 'aspect_data':
-            session["small_query_aspect_data"] = "(\'%s\', \'%s\', %s, %s, %s, %s)"%(str(current_user), str(session["id"]), session["image_selection"][-1][0], session["image_selection"][-1][1], -1, 5)
+        img1, img2 = session["image_selection"][-1]
+        session["last_answer"] = [str(current_user), img1, img2, -1, 5]
 
     sess_limit = True if len(session["image_selection"]) == max_pairs_in_session else False
     # make a list of all such rows and delete them
@@ -124,37 +120,27 @@ def select():
     login_timeout = max_pairs_in_session * time_for_each_pair + 3
     session_time = time.time()-session["global_time"]
     if len(lis) == 0 or sess_limit or (session_time >= login_timeout):
-        if table_name == 'data':
-            session["sql_query_data"] = session["sql_query_data"] + session["small_query_data"]
-        if table_name == 'aspect_data':
-            session["sql_query_aspect_data"] = session["sql_query_aspect_data"] + session["small_query_aspect_data"]
+        answers = session["answers"]
+        if session["last_answer"]:
+            answers = answers + [session["last_answer"]]
         try:
-            if session["small_query_data"] != "":
-                cursorObject.execute(session["sql_query_data"])
-            if session["small_query_aspect_data"] != "":
-                cursorObject.execute(session["sql_query_aspect_data"])
+            cursorObject.executemany(
+                f"INSERT INTO {table_name} (user_id, session_id, img1, img2, selection, time_taken) VALUES (?, ?, ?, ?, ?, ?)",
+                [(a[0], session["id"], *a[1:]) for a in answers])
             conn.commit()
-        except:
-            print("Sql aspect data\n")
-            print(session["sql_query_aspect_data"])
-            print("Sql data\n")
-            print(session["sql_query_data"])
+        except sqlite3.Error:
+            print(answers)
             flash('Something went wrong with the database! Please re-take the survey',category='error')
             redirect(url_for('views.home'))   
-        session["sql_query_aspect_data"] = "INSERT INTO aspect_data(user_id, session_id, img1, img2, selection,time_taken) VALUES"
-        session["sql_query_data"] = "INSERT INTO data(user_id, session_id, img1, img2, selection,time_taken) VALUES"
-        session["small_query_data"] = ""
-        session["small_query_aspect_data"] = ""
+        session["answers"] = []
+        session["last_answer"] = []
         session["image_selection"] = []
         session.pop('survey_type')
         print(lis)
         return redirect(url_for('views.thank_you'))
-    if table_name == 'data':
-        if session["small_query_data"] != "":
-            session["sql_query_data"] = session["sql_query_data"] + session["small_query_data"] + ","
-    if table_name == 'aspect_data':
-        if session["small_query_aspect_data"] != "": 
-            session["sql_query_aspect_data"] = session["sql_query_aspect_data"] + session["small_query_aspect_data"] + ","
+    if session["last_answer"]:
+        session["answers"] = session["answers"] + [session["last_answer"]]
+        session["last_answer"] = []
     if table_name == 'data': table_name = 'images'
     if table_name == 'aspect_data': table_name = 'aspect_images'
 
@@ -164,14 +150,14 @@ def select():
     i2 = random.choice(lis)
     try:
         cursorObject.execute(
-        f"SELECT img_id,link FROM {table_name} WHERE img_id={i1}")
+        f"SELECT img_id,link FROM {table_name} WHERE img_id = ?", (i1,))
     except:
         flash('Something went wrong with the database! Please re-take the survey',category='error')
         redirect(url_for('views.home'))
     image1 = cursorObject.fetchone()
     try:
         cursorObject.execute(
-        f"SELECT img_id,link FROM {table_name} WHERE img_id={i2}")
+        f"SELECT img_id,link FROM {table_name} WHERE img_id = ?", (i2,))
     except:
         flash('Something went wrong with the database! Please re-take the survey',category='error')
         redirect(url_for('views.home'))   
@@ -189,9 +175,12 @@ def select():
 def submit():
     # get the user's selection and the two images that were shown
     user_id = request.form['user_id']
-    selection = request.form['selection']
-    img1 = request.form['img1']
-    img2 = request.form['img2']
+    try:
+        selection = int(request.form['selection'])
+        img1 = int(request.form['img1'])
+        img2 = int(request.form['img2'])
+    except ValueError:
+        abort(400)
     try:
         time_taken_ = time.time()-session["start_time"]
     except:
@@ -200,12 +189,8 @@ def submit():
 
     survey_type = request.form['survey']  # Get the survey type from the submitted form data
 
-    if survey_type == 'temple':
-        table_name = 'data'
-        session["small_query_data"] = "(\'%s\', \'%s\', %s, %s, %s, %s)"%(user_id, session["id"], img1, img2, selection,time_taken_) 
-    elif survey_type == 'aspect':
-        table_name = 'aspect_data'
-        session["small_query_aspect_data"] = "(\'%s\', \'%s\', %s, %s, %s, %s)"%(str(user_id), str(session["id"]), img1, img2, selection,time_taken_) 
+    if survey_type in ('temple', 'aspect'):
+        session["last_answer"] = [str(user_id), img1, img2, selection, time_taken_]
     '''    
     else:
         flash('Something went wrong with the database! Please re-take the survey',category='error')
