@@ -10,3 +10,6 @@ flask --app main run --port 5055
 ```
 
 `SECRET_KEY` is required. Keep it stable across restarts, or every login session ends.
+
+Password reset emails need `MAIL_USERNAME`, `MAIL_PASSWORD` and optionally `MAIL_DEFAULT_SENDER`,
+`MAIL_SERVER` (default `smtp.gmail.com`), `MAIL_PORT` (default `587`) and `MAIL_USE_TLS` (default `true`).

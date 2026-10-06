@@ -15,13 +15,13 @@ def create_app():
     app = Flask(__name__)
     app.config['SECRET_KEY'] = os.environ['SECRET_KEY']
     app.config['SQLALCHEMY_DATABASE_URI'] = f'sqlite:///{USER_DB_PATH}'
-    app.config['MAIL_SERVER']='smtp.gmail.com'            #appropriate email server
-    app.config['MAIL_PORT'] = 587                         # appropriate mail port
-    app.config['MAIL_USERNAME'] = ''  # add your email id
-    app.config['MAIL_PASSWORD'] = ''         # add its password
-    app.config['MAIL_USE_TLS'] = True
+    app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER', 'smtp.gmail.com')
+    app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT', 587))
+    app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME', '')
+    app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD', '')
+    app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS', 'true').lower() == 'true'
     app.config['MAIL_USE_SSL'] = False
-    app.config['MAIL_DEFAULT_SENDER'] = ''       #add your email id
+    app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER', app.config['MAIL_USERNAME'])
     db.init_app(app)
     mail.init_app(app)
    
