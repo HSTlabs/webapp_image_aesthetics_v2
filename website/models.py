@@ -1,8 +1,10 @@
 from . import db
 from flask_login import UserMixin
 from sqlalchemy.sql import func
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import secrets
+
+TOKEN_TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
@@ -17,10 +19,12 @@ class User(db.Model, UserMixin):
 
     @staticmethod
     def verify_reset_token(token):
-        return User.query.filter_by(reset_token=token).first()
+        now = datetime.now(timezone.utc).strftime(TOKEN_TIME_FORMAT)
+        return User.query.filter(User.reset_token == token, User.reset_token_expires > now).first()
 
     def generate_reset_token(self):
         self.reset_token = secrets.token_urlsafe(32)
-        self.reset_token_expires = datetime.utcnow() + timedelta(hours=1)
+        expires = datetime.now(timezone.utc) + timedelta(hours=1)
+        self.reset_token_expires = expires.strftime(TOKEN_TIME_FORMAT)
         db.session.commit()
         return self.reset_token
