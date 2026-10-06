@@ -158,7 +158,9 @@ def reset_password(token):
         new_password = request.form.get('password')
         confirm_password = request.form.get('confirm_password')
 
-        if new_password == confirm_password:
+        if len(new_password) < 7:
+            flash('Password must be at least 7 characters.', category='error')
+        elif new_password == confirm_password:
             user.password = generate_password_hash(new_password, method='pbkdf2:sha256')
             user.reset_token = None
             user.reset_token_expires = None
