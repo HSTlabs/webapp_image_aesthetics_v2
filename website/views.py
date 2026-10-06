@@ -154,12 +154,14 @@ def select():
         return redirect(url_for('views.home'))   
     image2 = cursorObject.fetchone()
     session["start_time"] = time.time()
+    # Pause before the next pair only after an answered pair
+    session["pause"] = time_between_pairs if session["update_no"] == 1 else 0
     imgs_chosen = []
     imgs_chosen.append(i1)
     imgs_chosen.append(i2)
     session["image_selection"].append(imgs_chosen)
     session["update_no"] = 0
-    return render_template('survey.html', img1=image1, img2=image2, user=current_user,survey_type=survey_type, max_width_db=max_width, max_height_db=max_height)
+    return render_template('survey.html', img1=image1, img2=image2, user=current_user,survey_type=survey_type, max_width_db=max_width, max_height_db=max_height, pause_ms=session["pause"] * 1000)
 
 @ views.route('/submit', methods=['POST'])
 @ login_required
@@ -175,7 +177,7 @@ def submit():
     if selection not in (img1, img2):
         abort(400)
     try:
-        time_taken_ = time.time()-session["start_time"]
+        time_taken_ = time.time()-session["start_time"]-session.get("pause", 0)
     except:
         flash('Something went wrong with the timer! Please re-take the survey',category='error')
         return redirect(url_for('views.home'))
@@ -190,7 +192,6 @@ def submit():
         return redirect(url_for('views.home',survey_type=survey_type))
     '''
     session["update_no"] = 1
-    time.sleep(time_between_pairs)  
     # insert the data into the database
     #cur = conn.cursor()
     

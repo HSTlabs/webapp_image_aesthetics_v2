@@ -24,13 +24,13 @@
         var imgOne = new Image();
         var imgTwo = new Image();
         var imagesLoaded = 0; // Track the number of loaded images
+        var pauseDone = false;
 
         imgOne.src = "{{ img1[1] }}";
         imgTwo.src = "{{ img2[1] }}";
 
         function showImages() {
-            imagesLoaded++;
-            if (imagesLoaded === 2) {
+            if (imagesLoaded === 2 && pauseDone) {
                 // Both images are loaded, show them and start the countdown
                 var image1 = document.getElementById("img_one");
                 var image2 = document.getElementById("img_two");
@@ -51,8 +51,15 @@
 
         // Register the onload event for both images
         imgOne.onload = imgTwo.onload = function () {
+            imagesLoaded++;
             showImages();
         };
+
+        // Show the pair once the pause between pairs ends
+        setTimeout(function () {
+            pauseDone = true;
+            showImages();
+        }, {{ pause_ms }});
 
         // Function to update the countdown timer
         function updateCountdown() {
