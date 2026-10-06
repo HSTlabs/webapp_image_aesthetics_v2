@@ -8,12 +8,14 @@
     <title>Image Survey</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
     <script>
+        var submitted = false;
+
         // Add event listener for visibility change
         document.addEventListener("visibilitychange", function () {
             if (document.hidden) {
                 // Pause the countdown when the tab is not active
                 clearInterval(countdownTimer);
-            } else {
+            } else if (!submitted) {
                 // Resume the countdown when the tab becomes active
                 countdownTimer = setInterval(updateCountdown, 1000);
             }
@@ -67,6 +69,10 @@
 
         // Function to submit the form
         function submitForm(selection) {
+            // Submit once; stop the countdown reload
+            if (submitted) return;
+            submitted = true;
+            clearInterval(countdownTimer);
             var form = document.getElementById("surveyForm");
             var selectionInput = document.getElementById("selectionInput");
             selectionInput.value = selection;
