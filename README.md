@@ -5,11 +5,15 @@ A web application that presents users with a visual survey, requiring them to co
 
 ```sh
 pip install -r requirements.txt
+mkdir -p instance && cp -n seed/img_db img_db && cp -n seed/database.db instance/database.db
 export SECRET_KEY="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
 flask --app main run --port 5055
 ```
 
 `SECRET_KEY` is required. Keep it stable across restarts, or every login session ends.
+
+`img_db` and `instance/database.db` hold live data and are not tracked. `seed/` has starter
+copies with the image list and empty answer and account tables. `cp -n` never overwrites.
 
 Password reset emails need `MAIL_USERNAME`, `MAIL_PASSWORD` and optionally `MAIL_DEFAULT_SENDER`,
 `MAIL_SERVER` (default `smtp.gmail.com`), `MAIL_PORT` (default `587`) and `MAIL_USE_TLS` (default `true`).
