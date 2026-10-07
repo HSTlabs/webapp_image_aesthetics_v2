@@ -5,7 +5,9 @@ A web application that presents users with a visual survey, requiring them to co
 
 ```sh
 pip install -r requirements.txt
-mkdir -p instance && cp -n seed/img_db img_db && cp -n seed/database.db instance/database.db
+mkdir -p instance
+cp -n seed/img_db img_db
+cp -n seed/database.db instance/database.db
 export SECRET_KEY="$(python3 -c 'import secrets; print(secrets.token_hex(32))')"
 flask --app main run --port 5055
 ```
